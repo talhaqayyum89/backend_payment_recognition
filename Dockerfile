@@ -17,7 +17,7 @@ WORKDIR /tmp
 RUN pip install -r requirements.txt
 RUN pip install streamlit
 
-EXPOSE 8500
+EXPOSE 8501
 
 HEALTHCHECK CMD curl --fail http://localhost:8500/_stcore/health
 
