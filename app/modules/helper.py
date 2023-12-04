@@ -1,5 +1,4 @@
 
-
 def extract_loan_ids_from_column(df, column_name):
     pattern1 = r'(?:\bloan\s*id\s*-\s*|loan\s*id\s*:\s*|apploan\s*id\s*|trfloan\s*id\s*|gtb-loan\s*id\s*:\s*|\s*loan\s*id\s*|\s*loan\s*id\s*for\s*dec\s*\d{4}\s*loan\s*repayment\s*ref:|\s*loan\s*id\s*\d{8}\s*ref:|\s*loan\s*id\s*\d{8}\s*-\s*|\s*loan\s*id\s*\d{8}\s*\-\s*|\s*loan\s*id\s*-\s*\d{8}\s*|\s*\d{8}\s*-\s*|\s*\d{8}\s*\-\s*)\s*(\d{8})\b'
     pattern2 = r'(?:loan\s*id\s*-\s*|loan\s*id\s*:\s*|apploan\s*id\s*|trfloan\s*id\s*|gtb-loan\s*id\s*:\s*|\s*loan\s*id\s*for\s*dec\s*\d{4}\s*loan\s*repayment\s*ref:|\s*\d{8}\s*\-\s*|\s*loan\s*id\s*-\s*\d{8}\s*|\s*loan\s*id\s*(\d{8})\b)'
@@ -74,6 +73,11 @@ def extract_names_from_column(df, column_name):
     pattern8 = r'\|(.*?)\s(?:REF|Ref)'
     pattern9 = r'from\s(.*?)\s-'
     pattern10 = r'\b\d{8}\s(.*?)\sto\sRENMONEY'
+    pattern11 = r'\|(.*?)\s+POS Trf'
+    pattern12 = r'\|([^\|]+)REF'
+    pattern13 = r';([A-Za-z\s]+)$'
+    pattern14 = r':([^:]+):'
+
 
     # Use str.extract to extract the matching group directly for each pattern
     matches1 = df[column_name].str.extract(pattern1, expand=False)
@@ -86,8 +90,16 @@ def extract_names_from_column(df, column_name):
     matches8 = df[column_name].str.extract(pattern8, expand=False)
     matches9 = df[column_name].str.extract(pattern9, expand=False)
     matches10 = df[column_name].str.extract(pattern10, expand=False)
+    matches11 = df[column_name].str.extract(pattern11, expand=False)
+    matches12 = df[column_name].str.extract(pattern12, expand=False)
+    matches13 = df[column_name].str.extract(pattern13, expand=False)
+    matches14 = df[column_name].str.extract(pattern14, expand=False)
 
-    matches = matches1.combine_first(matches2).combine_first(matches3).combine_first(matches4).combine_first(matches5).combine_first(matches6).combine_first(matches7).combine_first(matches8).combine_first(matches9).combine_first(matches10)
+    # combining patterrns
+    matches = matches1.combine_first(matches2).combine_first(matches3).combine_first(matches4).combine_first \
+        (matches5).combine_first(matches6).combine_first(matches7).combine_first(matches8).combine_first \
+        (matches9).combine_first(matches10).combine_first(matches11).combine_first(matches12).combine_first \
+        (matches13).combine_first(matches14)
     # Add exception handling
     try:
         # Extract names
@@ -100,5 +112,3 @@ def extract_names_from_column(df, column_name):
     df['name'] = names
 
     return df
-
-
