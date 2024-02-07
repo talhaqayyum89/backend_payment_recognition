@@ -7,7 +7,7 @@ warnings.filterwarnings('ignore')
 @st.cache_data
 def convert_df(df):
     # IMPORTANT: Cache the conversion to prevent computation on every rerun
-    return df.to_csv().encode('utf-8')
+    return df.to_excel(index=False)
 
 
 # Streamlit app
@@ -35,10 +35,10 @@ def main():
 
         download_link = convert_df(predictions_df)
         st.download_button(
-                        label="Download data as CSV",
+                        label="Download data as Excel",
                         data=download_link,
                         file_name=processed_filename,
-                        mime='text/csv',
+                        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                     )
 
 

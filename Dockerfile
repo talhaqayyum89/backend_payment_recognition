@@ -22,5 +22,4 @@ EXPOSE 8501
 HEALTHCHECK CMD curl --fail http://localhost:8500/_stcore/health
 
 COPY / ./
-# ENTRYPOINT ["streamlit", "run", "main.py", "--server.port=8500", "--server.address=0.0.0.0"]
 CMD streamlit run main.py

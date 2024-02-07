@@ -1,7 +1,7 @@
 import pandas as pd
 from datetime import datetime
 
-from app.modules.helper import extract_names_from_column, extract_loan_ids_from_column
+from app.modules.helper import extract_names_from_column, extract_loan_ids_from_column, get_final_result
 import streamlit as st
 
 
@@ -22,17 +22,22 @@ def get_predictions(file):
 
             # Read the Excel file data into a DataFrame
             df = pd.read_excel(file)
+            st.write("Database data loaded......")
+            db_data = pd.read_csv('helper_files/talha_data.csv')
 
             # Perform operations on the DataFrame
-            df = extract_names_from_column(df, 'Description')
-            df = extract_loan_ids_from_column(df, 'Description')
+            st.write("name extraction in Progress........")
+            df_names = extract_names_from_column(db_data, df, 'Description')
+            st.write("loanid extraction in Progress........")
+            df_loanids = extract_loan_ids_from_column(db_data, df, 'Description')
+            final_df = get_final_result(df, df_names, df_loanids)
 
             # Save the modified DataFrame to a new Excel file
             processed_filename = f'extracted_results_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
             # df.to_excel(processed_filename, index=False)
 
             # Return the modified DataFrame and the processed filename
-            return df, processed_filename
+            return final_df, processed_filename
         else:
             st.error("Invalid file format. Please upload a valid Excel file.")
             return None, None

@@ -48,3 +48,5 @@ urllib3==2.1.0
 validators==0.22.0
 Werkzeug==3.0.1
 zipp==3.17.0
+fuzzywuzzy~=0.18.0
+nltk~=3.8.1

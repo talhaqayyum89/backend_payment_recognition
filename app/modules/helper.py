@@ -1,114 +1,275 @@
-
-def extract_loan_ids_from_column(df, column_name):
-    pattern1 = r'(?:\bloan\s*id\s*-\s*|loan\s*id\s*:\s*|apploan\s*id\s*|trfloan\s*id\s*|gtb-loan\s*id\s*:\s*|\s*loan\s*id\s*|\s*loan\s*id\s*for\s*dec\s*\d{4}\s*loan\s*repayment\s*ref:|\s*loan\s*id\s*\d{8}\s*ref:|\s*loan\s*id\s*\d{8}\s*-\s*|\s*loan\s*id\s*\d{8}\s*\-\s*|\s*loan\s*id\s*-\s*\d{8}\s*|\s*\d{8}\s*-\s*|\s*\d{8}\s*\-\s*)\s*(\d{8})\b'
-    pattern2 = r'(?:loan\s*id\s*-\s*|loan\s*id\s*:\s*|apploan\s*id\s*|trfloan\s*id\s*|gtb-loan\s*id\s*:\s*|\s*loan\s*id\s*for\s*dec\s*\d{4}\s*loan\s*repayment\s*ref:|\s*\d{8}\s*\-\s*|\s*loan\s*id\s*-\s*\d{8}\s*|\s*loan\s*id\s*(\d{8})\b)'
-    pattern3 = r'\b(\d{8})\b'
-    pattern4 = r'(?i)TRFLoan\s*ID[:\-\s]*([0-9]{8})'
-
-    pattern5 = r'(?:\bloan\s*id\s*-\s*|loan\s*id\s*:\s*|apploan\s*id\s*|trfloan\s*id\s*|gtb-loan\s*id\s*:\s*|\s*loan\s*id\s*|\s*loan\s*id\s*for\s*dec\s*\d{4}\s*loan\s*repayment\s*ref:|\s*loan\s*id\s*\d{9}\s*ref:|\s*loan\s*id\s*\d{9}\s*-\s*|\s*loan\s*id\s*\d{9}\s*\-\s*|\s*loan\s*id\s*-\s*\d{9}\s*|\s*\d{9}\s*-\s*|\s*\d{9}\s*\-\s*)\s*(\d{9})\b'
-    pattern6 = r'(?:loan\s*id\s*-\s*|loan\s*id\s*:\s*|apploan\s*id\s*|trfloan\s*id\s*|gtb-loan\s*id\s*:\s*|\s*loan\s*id\s*for\s*dec\s*\d{4}\s*loan\s*repayment\s*ref:|\s*\d{9}\s*\-\s*|\s*loan\s*id\s*-\s*\d{9}\s*|\s*loan\s*id\s*(\d{9})\b)'
-    pattern7 = r'\b(\d{9})\b'
-    pattern8 = r'(?i)TRFLoan\s*ID[:\-\s]*([0-9]{9})'
-
-    pattern9 = r'\b(\d{8})frm\b'
-    pattern10 = r'\b(\d{9})frm\b'
-    pattern11 = r'\b(\d{7})frm\b'
-    pattern12 = r'(?i)(?<!\d)loan\s?id|id.*?(\d{8}).*?(?=\b|\D|$)'
-
-    pattern13 = r'(?i)(?<!\d)(?:loan\s?id|id)[^\d]*(\d{8})[^\d]*\b'
-    pattern14 = r'\b(\d{6})\b'
-    pattern15 = r'\b(\d{7})\b'
-    pattern16 = r'(?i)(?<!\d)(?:loan\s?id:|id:)\D*(\d{10})\D*\b'
-
-    # Use str.extract to extract the matching group directly for each pattern
-    matches1 = df[column_name].str.lower().str.extract(pattern1, expand=False)
-    matches2 = df[column_name].str.lower().str.extract(pattern2, expand=False)
-    matches3 = df[column_name].str.lower().str.extract(pattern3, expand=False)
-    matches4 = df[column_name].str.lower().str.extract(pattern4, expand=False)
-
-    matches5 = df[column_name].str.lower().str.extract(pattern5, expand=False)
-    matches6 = df[column_name].str.lower().str.extract(pattern6, expand=False)
-    matches7 = df[column_name].str.lower().str.extract(pattern7, expand=False)
-    matches8 = df[column_name].str.lower().str.extract(pattern8, expand=False)
-
-    matches9 = df[column_name].str.lower().str.extract(pattern9, expand=False)
-    matches10 = df[column_name].str.lower().str.extract(pattern10, expand=False)
-    matches11 = df[column_name].str.lower().str.extract(pattern11, expand=False)
-    matches12 = df[column_name].str.lower().str.extract(pattern12, expand=False)
-
-    matches13 = df[column_name].str.lower().str.extract(pattern13, expand=False)
-    matches14 = df[column_name].str.lower().str.extract(pattern14, expand=False)
-    matches15 = df[column_name].str.lower().str.extract(pattern15, expand=False)
-    matches16 = df[column_name].str.lower().str.extract(pattern16, expand=False)
-
-    # Combine matches using '|' (OR) to get the first non-null match
-    matches = matches1.combine_first(matches2).combine_first(matches3).combine_first(matches4).combine_first(
-        matches5).combine_first(matches6).combine_first(matches7).combine_first(matches8).combine_first(
-        matches9).combine_first(matches10).combine_first(matches11).combine_first(matches12).combine_first(
-        matches13).combine_first(matches14).combine_first(matches15).combine_first(matches16)
-
-    # Add exception handling
-    try:
-        # Extract Loan IDs
-        loan_ids = matches.str.strip()  # strip whitespaces from extracted values
-    except AttributeError:
-        # If no match is found, return None
-        loan_ids = None
-
-    # Create a new column 'loan id' and store the extracted Loan IDs
-    df['loan id'] = loan_ids
-
-    return df
+import numpy as np
+from fuzzywuzzy import process, fuzz
+import pandas as pd
+from nltk.corpus import stopwords
+import streamlit as st
+from nltk.tokenize import word_tokenize
+import re
+import string
 
 
-def extract_names_from_column(df, column_name):
-    # First regex pattern
-    pattern1 = r'(?:from|FRM)\s(.*?)\sto\sRENMONEY\sREPAYMENT\sACCOUNT'
-    pattern2 = r'(?<=\.|\s)([A-Za-z\s]+)(?=\sREF)'
-    pattern3 = r'([A-Z\s]+)(?=-\d{3}-[A-Z]+ REF:)'
-    pattern4 = r'FRM\s(.*?)\sTO\sRENMONEY\sREPAYMENT\sACCOUNT'
-    pattern5 = r'from\s(.*?)\swith'
-    pattern6 = r'\|(.*?)\s(?:Loan\s*ID|loanid|LOANID|Loan\s*iD)'
-    pattern7 = r'FRM\s(.*?)\sTO'
-    pattern8 = r'\|(.*?)\s(?:REF|Ref)'
-    pattern9 = r'from\s(.*?)\s-'
-    pattern10 = r'\b\d{8}\s(.*?)\sto\sRENMONEY'
-    pattern11 = r'\|(.*?)\s+POS Trf'
-    pattern12 = r'\|([^\|]+)REF'
-    pattern13 = r';([A-Za-z\s]+)$'
-    pattern14 = r':([^:]+):'
+# Sample DataFrame with 'description' column
+def get_filtered_narrations_loanids(narrations):
+    # List of words to remove
+    stop_words = set(stopwords.words('english'))
+
+    # Function to process each description
+    def process_description(description):
+        # Convert to lowercase
+        description = description.lower()
+
+        # Remove words, symbols, and punctuations
+        description = re.sub(r'[^a-zA-Z0-9\s|]', '', description)
+
+        # Tokenize the description
+        words = description.split()
+
+        # Remove stop words
+        filtered_words = [word for word in words if word not in stop_words]
+
+        # Extract individual 7, 8, 9, or 10-digit numbers
+        numbers = re.findall(r'\|(\d{6,14})\|', ' '.join(filtered_words))
+
+        # Join the extracted numbers with a comma
+        extracted_numbers = ','.join(numbers)
+
+        return extracted_numbers
+
+    # Apply the processing function to the 'description' column and save the result in a new column
+    narrations['extracted_loanids'] = narrations['Description'].apply(process_description)
+
+    # Display the result
+    return narrations
 
 
-    # Use str.extract to extract the matching group directly for each pattern
-    matches1 = df[column_name].str.extract(pattern1, expand=False)
-    matches2 = df[column_name].str.extract(pattern2, expand=False)
-    matches3 = df[column_name].str.extract(pattern3, expand=False)
-    matches4 = df[column_name].str.extract(pattern4, expand=False)
-    matches5 = df[column_name].str.extract(pattern5, expand=False)
-    matches6 = df[column_name].str.extract(pattern6, expand=False)
-    matches7 = df[column_name].str.extract(pattern7, expand=False)
-    matches8 = df[column_name].str.extract(pattern8, expand=False)
-    matches9 = df[column_name].str.extract(pattern9, expand=False)
-    matches10 = df[column_name].str.extract(pattern10, expand=False)
-    matches11 = df[column_name].str.extract(pattern11, expand=False)
-    matches12 = df[column_name].str.extract(pattern12, expand=False)
-    matches13 = df[column_name].str.extract(pattern13, expand=False)
-    matches14 = df[column_name].str.extract(pattern14, expand=False)
+# def find_best_matches(description, choices):
+#     matches = process.extractBests(description, choices, scorer=fuzz.ratio, score_cutoff=0)
+#     return matches
 
-    # combining patterrns
-    matches = matches1.combine_first(matches2).combine_first(matches3).combine_first(matches4).combine_first \
-        (matches5).combine_first(matches6).combine_first(matches7).combine_first(matches8).combine_first \
-        (matches9).combine_first(matches10).combine_first(matches11).combine_first(matches12).combine_first \
-        (matches13).combine_first(matches14)
-    # Add exception handling
-    try:
-        # Extract names
-        names = matches.str.strip()  # strip whitespaces from extracted values
-    except AttributeError:
-        # If no match is found, return None
-        names = None
 
-    # Create a new column 'names' and store the extracted names
-    df['name'] = names
+def extract_loan_ids_from_column(db_data, narrations, column_name):
+    # Assuming 'Value Date', 'Post Date', 'Description', 'Amount' are the column names
+    selected_columns = ['Value Date', 'Post Date', 'Description', 'AMOUNT']
 
-    return df
+    # Selecting specific columns from the 'narrations' DataFrame
+    narrations = narrations[selected_columns]
+    narrations = get_filtered_narrations_loanids(narrations)
+
+    rows = []
+
+    # Iterate over each row in the narrations dataframe
+    st.write("searching loanids in db data....")
+    for _, row in narrations.iterrows():
+        description = row['extracted_loanids']
+        if description:
+            # Match with 'LoanId'
+            matches_loanid = find_best_matches(description, db_data['LoanId'].astype(str))
+            matches_loanid.sort(key=lambda x: x[1], reverse=True)
+            top_matches_loanid = matches_loanid[:1]
+
+            # Match with 'ClientId'
+            matches_clientid = find_best_matches(description, db_data['clientID'].astype(str))
+            matches_clientid.sort(key=lambda x: x[1], reverse=True)
+            top_matches_clientid = matches_clientid[:1]
+
+            # Append the data to the rows list
+            for match_loanid in top_matches_loanid:
+                for match_clientid in top_matches_clientid:
+                    rows.append({
+                        'LoanId': match_loanid[0],
+                        'clientID': match_clientid[0],
+                        'Matched LoanIds from Description': description,
+                        'Fuzzy Score (LoanId)': match_loanid[1],
+                        'Fuzzy Score (clientID)': match_clientid[1]
+                    })
+        else:
+            # Add a default entry when extracted_loanids is empty
+            rows.append({
+                'LoanId': "",
+                'clientID': "",
+                'Matched LoanIds from Description': description,
+                'Fuzzy Score (LoanId)': 0,
+                'Fuzzy Score (clientID)': 0
+            })
+
+    # Convert the list of dictionaries into a DataFrame
+    result_df_loanids = pd.DataFrame(rows)
+
+    # Drop rows with missing values and where both Fuzzy Scores are zero
+    result_df_loanids = result_df_loanids.dropna()
+    result_df_loanids = result_df_loanids[
+        (result_df_loanids['Fuzzy Score (LoanId)'] != 0) & (result_df_loanids['Fuzzy Score (clientID)'] != 0)]
+
+    # Reset the index
+    result_df_loanids.reset_index(drop=True, inplace=True)
+    return result_df_loanids
+
+
+def get_filtered_narrations(narrations):
+    # List of words to remove
+    stop_words = set(stopwords.words('english'))
+    custom_words_to_remove = ['customers', 'dgbnk', 'transfer', 'nibbs', 'mobdgbnkvulte', 'trfrenmoneyfrm',
+                              'renmoney repayment',
+                              'renmoney', 'repayment', 'account', 'gtworld', 'nibss', 'trf', 'loan', 'acount',
+                              'deposit', 'pos', 'gtbank',
+                              'limited', 'bank', 'microfinance', 'business', 'plc', 'intra', 'ifo', 'usd', 'payment',
+                              'late payment charge',
+                              'ussd', 'app', 'switchit', 'ltd', 'mbanking', 'funds', 'trgp', 'union', 'nigeria',
+                              'vulte', 'ventures', 'balance', 'frm', 'microfinanc', 'global', 'palmpay', 'services',
+                              'lirenmoney',
+                              'rev', 'digital', 'nmoney', 'nipre', 'comm', 'includes', 'ref', 'lagos', 'banking',
+                              'internet', 'fund', 'venture',
+                              'final', 'accounts', 'mob', 'fbnmobile', 'polaris', 'nxg', 'savings', 'nip', 'cash',
+                              'micro',
+                              'amt vat', 'web remoney', 'fbnile', 'airtime purhase r', 'monthly', 'money', 'oney',
+                              'uto', 'trfloan id', 'dominion ent customer',
+                              'dominion', 'ent customer at_', 'to gtbank plc renmoney', 'v aella', 'baaa tr aella_fin',
+                              'irene imo pmt shortfalls',
+                              'irene imo pmt shortfalls', 'gapslite tobi badmus', 'part payment', 'renm', 'atm',
+                              'from iti', 'gtb-', 'part', 'diamondxtra']
+
+    def process_description(description):
+        # Convert to lowercase
+        description = description.lower()
+
+        # Remove numbers
+        description = re.sub(r'\d+', '', description)
+
+        # Remove custom words
+        for word in custom_words_to_remove:
+            description = description.replace(word, '')
+
+        # Tokenize the description using a custom regex to preserve spaces
+        words = re.findall(r'\b\w+\b', description)
+
+        # Remove stop words
+        filtered_words = [word for word in words if word not in stop_words]
+
+        # Join the filtered words with spaces to maintain spacing
+        processed_description = ' '.join(dict.fromkeys(filtered_words))
+
+        return processed_description
+
+    # Apply the processing function to the 'description' column and save the result in a new column
+    narrations['processed_description'] = narrations['Description'].apply(process_description)
+
+    return narrations
+
+
+def find_best_matches(description, choices):
+    # Use both fuzz.ratio and Levenshtein distance as scorers
+    ratio_matches = process.extractBests(description, choices, scorer=fuzz.ratio, score_cutoff=0)
+    levenshtein_matches = process.extractBests(description, choices, scorer=fuzz.partial_ratio, score_cutoff=0)
+
+    # Combine the two sets of matches
+    all_matches = ratio_matches + levenshtein_matches
+
+    return all_matches
+
+
+def extract_names_from_column(db_data, narrations, column_name):
+    # Assuming 'Value Date', 'Post Date', 'Description', 'Amount' are the column names
+    selected_columns = ['Value Date', 'Post Date', 'Description', 'AMOUNT']
+
+    # Selecting specific columns from the 'narrations' DataFrame
+    narrations = narrations[selected_columns]
+
+    db_data = db_data[
+        ['ClientFullName', 'clientID', 'LoanId', 'AccountState', 'AccountSubstate', 'Product', 'CreationDate',
+         'DisbursementDate', 'DisbMonth', 'Age', 'LoanAmount', 'BureauData', 'RepaymentBank', 'RepaymentMethod', 'Term',
+         'TotalNumberOfAccounts', 'TotalNumberOfAccountsInArrs',
+         'TotalMonthlyInstallments', 'TotalOutstandingDebt', 'Closeddate', 'MaturityDate', 'Email', 'Channels',
+         'InterestRate', 'Acct_Duratn']]
+
+    narrations = get_filtered_narrations(narrations)
+
+    # Initialize an empty list to store the rows
+    rows = []
+    st.write("searching customers in db data....")
+
+    # Iterate over each row in the narrations dataframe
+    for _, row in narrations.iterrows():
+        description = row['processed_description']
+        payment_date = row['Post Date']
+        payment_amount = row['AMOUNT']
+        if description:
+            # Find matches only when processed_description is not empty
+            matches = find_best_matches(description, db_data['ClientFullName'].astype(str).str.lower())
+
+            # Sort the matches by both fuzzy score and Levenshtein distance
+            matches.sort(key=lambda x: (x[1], -fuzz.partial_ratio(description, x[0])), reverse=True)
+
+            # Take the top 3 matches or less if there are fewer matches
+            top_matches = matches[:3]
+
+            # Append the results to the rows list
+            for match in top_matches:
+                rows.append({
+                    'Name': match[0],
+                    'Matched Name from Description': description,
+                    'payment_date': payment_date,
+                    'payment_amount': payment_amount,
+                    'Fuzzy Score': match[1],
+                    'Levenshtein Similarity (%)': fuzz.partial_ratio(description, match[0])
+                })
+        else:
+            # Add a default entry when processed_description is empty
+            rows.append({
+                'Name': 'Name not found in description',
+                'Matched Name from Description': '',
+                'payment_date': payment_date,
+                'payment_amount': payment_amount,
+                'Fuzzy Score': 0,
+                'Levenshtein Similarity (%)': 0
+            })
+
+    # Create a DataFrame from the rows list
+    result_df_names = pd.DataFrame(rows)
+    return result_df_names
+
+
+def get_final_result(db_data, result_df_names, result_df_loanids):
+    # Assuming result_df_names, result_df_loanids, and db_data are your dataframes
+    db_data['ClientFullName'] = db_data['ClientFullName'].str.lower()
+    df = pd.merge(left=result_df_names, right=db_data, left_on='Name', right_on='ClientFullName', how='left')
+
+    # Step 2: Create 'Name Match' column based on Fuzzy Score ranges
+    conditions = [
+        (df['Fuzzy Score'] >= 90),
+        (df['Fuzzy Score'] >= 80),
+        (df['Fuzzy Score'] < 80)
+    ]
+    values = ['Full Name Match', 'Name Partially Matched', 'Name not Matched']
+    df['Name Match'] = np.select(conditions, values, default='')
+
+    # Optional: Drop unnecessary columns after merging
+    # df.drop(['Name', 'Fuzzy Score'], axis=1, inplace=True)
+    df.drop_duplicates(subset='Name', inplace=True)
+
+    loanid_match_df = result_df_loanids[result_df_loanids['Fuzzy Score (LoanId)'] == 100].copy()
+    ds = pd.merge(df, loanid_match_df[['LoanId', 'Fuzzy Score (LoanId)']], on='LoanId', how='left')
+    ds['LoanId Match'] = ds['Fuzzy Score (LoanId)'].apply(lambda x: 'Yes' if x == 100 else 'No')
+
+    clientid_match_df = result_df_loanids[result_df_loanids['Fuzzy Score (clientID)'] == 100].copy()
+    final_result = pd.merge(ds, clientid_match_df[['clientID', 'Fuzzy Score (clientID)']], on='clientID', how='left')
+
+    final_result['clientID Match'] = final_result['Fuzzy Score (clientID)'].apply(lambda x: 'Yes' if x == 100 else 'No')
+    # Optional: Drop unnecessary columns after merging
+    final_result.drop(['Fuzzy Score (LoanId)', 'Fuzzy Score (clientID)'], axis=1, inplace=True)
+
+    # Reset index if needed
+    final_result.reset_index(drop=True, inplace=True)
+
+    selected_columns = [
+        'ClientFullName', 'Matched Name from Description', 'Name Match',
+        'clientID', 'LoanId', 'LoanId Match', 'clientID Match', 'payment_date',
+        'payment_amount',
+        'AccountState', 'AccountSubstate', 'Product', 'CreationDate',
+        'DisbursementDate', 'DisbMonth', 'Age', 'LoanAmount', 'BureauData',
+        'RepaymentBank', 'RepaymentMethod', 'Term', 'Closeddate',
+        'MaturityDate', 'Email', 'Channels', 'InterestRate'
+    ]
+
+    # Create a new DataFrame with only the selected columns
+    final_result = final_result[selected_columns]
+    return final_result
