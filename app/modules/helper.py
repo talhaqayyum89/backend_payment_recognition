@@ -6,6 +6,9 @@ import streamlit as st
 from nltk.tokenize import word_tokenize
 import re
 import string
+import nltk
+
+nltk.download('stopwords')
 
 
 # Sample DataFrame with 'description' column
@@ -63,6 +66,7 @@ def extract_loan_ids_from_column(db_data, narrations, column_name):
         description = row['extracted_loanids']
         if description:
             # Match with 'LoanId'
+            st.write("Finding Matches for Description:", description)
             matches_loanid = find_best_matches(description, db_data['LoanId'].astype(str))
             matches_loanid.sort(key=lambda x: x[1], reverse=True)
             top_matches_loanid = matches_loanid[:1]
@@ -194,6 +198,7 @@ def extract_names_from_column(db_data, narrations, column_name):
         payment_amount = row['AMOUNT']
         if description:
             # Find matches only when processed_description is not empty
+            st.write("Finding Matches for Description:", description)
             matches = find_best_matches(description, db_data['ClientFullName'].astype(str).str.lower())
 
             # Sort the matches by both fuzzy score and Levenshtein distance
