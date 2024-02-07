@@ -9,6 +9,9 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
+# Download NLTK stopwords resource
+RUN pip install nltk && python -c "import nltk; nltk.download('stopwords')"
+
 # RUN git clone https://x-token-auth:ATCTT3xFfGN0moPw3MfvNJNlzNWWJJ0tTLOCGG70xKv_MFNBDLnduP6TrE6xKRe3Z_rABdbFRApTx5BgrXloF5djhVUJhYss80AJ6-kpFom3PHd8lFeaMm71hm0YItsQt8ByzPQGlQZWWdUEr2hUxE0r01A-9-TONpmGkc0yimeNLhCUej8aLUA=929F2274@bitbucket.org/renmoney-itops/backend_payment_recognition.git
 COPY . .
 
