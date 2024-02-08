@@ -30,7 +30,7 @@ def get_predictions(file):
             df_names = extract_names_from_column(db_data, df, 'Description')
             st.write("loanid extraction in Progress........")
             df_loanids = extract_loan_ids_from_column(db_data, df, 'Description')
-            final_df = get_final_result(df, df_names, df_loanids)
+            final_df = get_final_result(db_data, df_names, df_loanids)
 
             # Save the modified DataFrame to a new Excel file
             processed_filename = f'extracted_results_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'

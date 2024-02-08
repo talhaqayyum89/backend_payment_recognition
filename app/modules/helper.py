@@ -57,7 +57,7 @@ def extract_loan_ids_from_column(db_data, narrations, column_name):
     # Selecting specific columns from the 'narrations' DataFrame
     narrations = narrations[selected_columns]
     narrations = get_filtered_narrations_loanids(narrations)
-
+    st.write(narrations)
     rows = []
 
     # Iterate over each row in the narrations dataframe
@@ -66,12 +66,13 @@ def extract_loan_ids_from_column(db_data, narrations, column_name):
         description = row['extracted_loanids']
         if description:
             # Match with 'LoanId'
-            st.write("Finding Matches for Description:", description)
+            st.write("Finding LoanId Match from Description:", description)
             matches_loanid = find_best_matches(description, db_data['LoanId'].astype(str))
             matches_loanid.sort(key=lambda x: x[1], reverse=True)
             top_matches_loanid = matches_loanid[:1]
 
             # Match with 'ClientId'
+            st.write("Finding ClientId Match from Description:", description)
             matches_clientid = find_best_matches(description, db_data['clientID'].astype(str))
             matches_clientid.sort(key=lambda x: x[1], reverse=True)
             top_matches_clientid = matches_clientid[:1]
@@ -106,6 +107,7 @@ def extract_loan_ids_from_column(db_data, narrations, column_name):
 
     # Reset the index
     result_df_loanids.reset_index(drop=True, inplace=True)
+    st.write(result_df_loanids)
     return result_df_loanids
 
 
@@ -235,8 +237,12 @@ def extract_names_from_column(db_data, narrations, column_name):
 
 def get_final_result(db_data, result_df_names, result_df_loanids):
     # Assuming result_df_names, result_df_loanids, and db_data are your dataframes
+    st.write("preparing dataset to merge")
+    st.write(db_data.columns)
     db_data['ClientFullName'] = db_data['ClientFullName'].str.lower()
+    st.write("Finding Matched customer's data....")
     df = pd.merge(left=result_df_names, right=db_data, left_on='Name', right_on='ClientFullName', how='left')
+    st.write("Data Found and Merged....")
 
     # Step 2: Create 'Name Match' column based on Fuzzy Score ranges
     conditions = [
@@ -251,30 +257,48 @@ def get_final_result(db_data, result_df_names, result_df_loanids):
     # df.drop(['Name', 'Fuzzy Score'], axis=1, inplace=True)
     df.drop_duplicates(subset='Name', inplace=True)
 
-    loanid_match_df = result_df_loanids[result_df_loanids['Fuzzy Score (LoanId)'] == 100].copy()
-    ds = pd.merge(df, loanid_match_df[['LoanId', 'Fuzzy Score (LoanId)']], on='LoanId', how='left')
-    ds['LoanId Match'] = ds['Fuzzy Score (LoanId)'].apply(lambda x: 'Yes' if x == 100 else 'No')
+    # Check if result_df_loanids is not empty before merging
+    if not result_df_loanids.empty:
+        loanid_match_df = result_df_loanids[result_df_loanids['Fuzzy Score (LoanId)'] == 100].copy()
+        ds = pd.merge(df, loanid_match_df[['LoanId', 'Fuzzy Score (LoanId)']], on='LoanId', how='left')
+        ds['LoanId Match'] = ds['Fuzzy Score (LoanId)'].apply(lambda x: 'Yes' if x == 100 else 'No')
 
-    clientid_match_df = result_df_loanids[result_df_loanids['Fuzzy Score (clientID)'] == 100].copy()
-    final_result = pd.merge(ds, clientid_match_df[['clientID', 'Fuzzy Score (clientID)']], on='clientID', how='left')
+        clientid_match_df = result_df_loanids[result_df_loanids['Fuzzy Score (clientID)'] == 100].copy()
+        final_result = pd.merge(ds, clientid_match_df[['clientID', 'Fuzzy Score (clientID)']], on='clientID', how='left')
 
-    final_result['clientID Match'] = final_result['Fuzzy Score (clientID)'].apply(lambda x: 'Yes' if x == 100 else 'No')
-    # Optional: Drop unnecessary columns after merging
-    final_result.drop(['Fuzzy Score (LoanId)', 'Fuzzy Score (clientID)'], axis=1, inplace=True)
+        final_result['clientID Match'] = final_result['Fuzzy Score (clientID)'].apply(lambda x: 'Yes' if x == 100 else 'No')
+        # Optional: Drop unnecessary columns after merging
+        final_result.drop(['Fuzzy Score (LoanId)', 'Fuzzy Score (clientID)'], axis=1, inplace=True)
 
-    # Reset index if needed
-    final_result.reset_index(drop=True, inplace=True)
+        # Reset index if needed
+        final_result.reset_index(drop=True, inplace=True)
+        st.write("Finalizing Results....")
 
-    selected_columns = [
-        'ClientFullName', 'Matched Name from Description', 'Name Match',
-        'clientID', 'LoanId', 'LoanId Match', 'clientID Match', 'payment_date',
-        'payment_amount',
-        'AccountState', 'AccountSubstate', 'Product', 'CreationDate',
-        'DisbursementDate', 'DisbMonth', 'Age', 'LoanAmount', 'BureauData',
-        'RepaymentBank', 'RepaymentMethod', 'Term', 'Closeddate',
-        'MaturityDate', 'Email', 'Channels', 'InterestRate'
-    ]
+        selected_columns = [
+            'ClientFullName', 'Matched Name from Description', 'Name Match',
+            'clientID', 'LoanId', 'LoanId Match', 'clientID Match', 'payment_date',
+            'payment_amount',
+            'AccountState', 'AccountSubstate', 'Product', 'CreationDate',
+            'DisbursementDate', 'DisbMonth', 'Age', 'LoanAmount', 'BureauData',
+            'RepaymentBank', 'RepaymentMethod', 'Term', 'Closeddate',
+            'MaturityDate', 'Email', 'Channels', 'InterestRate'
+        ]
 
-    # Create a new DataFrame with only the selected columns
-    final_result = final_result[selected_columns]
-    return final_result
+        # Create a new DataFrame with only the selected columns
+        final_result = final_result[selected_columns]
+        return final_result
+    else:
+        selected_columns = [
+            'ClientFullName', 'Matched Name from Description', 'Name Match',
+            'clientID', 'LoanId', 'payment_date',
+            'payment_amount',
+            'AccountState', 'AccountSubstate', 'Product', 'CreationDate',
+            'DisbursementDate', 'DisbMonth', 'Age', 'LoanAmount', 'BureauData',
+            'RepaymentBank', 'RepaymentMethod', 'Term', 'Closeddate',
+            'MaturityDate', 'Email', 'Channels', 'InterestRate'
+        ]
+
+        # Create a new DataFrame with only the selected columns
+        df = df[selected_columns]
+        return df
+
