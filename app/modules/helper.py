@@ -107,7 +107,7 @@ def extract_loan_ids_from_column(db_data, narrations, column_name):
 
     # Reset the index
     result_df_loanids.reset_index(drop=True, inplace=True)
-    st.write(result_df_loanids)
+    # st.write(result_df_loanids)
     return result_df_loanids
 
 
@@ -238,7 +238,7 @@ def extract_names_from_column(db_data, narrations, column_name):
 def get_final_result(db_data, result_df_names, result_df_loanids):
     # Assuming result_df_names, result_df_loanids, and db_data are your dataframes
     st.write("preparing dataset to merge")
-    st.write(db_data.columns)
+    # st.write(db_data.columns)
     db_data['ClientFullName'] = db_data['ClientFullName'].str.lower()
     st.write("Finding Matched customer's data....")
     df = pd.merge(left=result_df_names, right=db_data, left_on='Name', right_on='ClientFullName', how='left')
