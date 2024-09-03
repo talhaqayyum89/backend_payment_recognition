@@ -1,0 +1,11 @@
+*.pyc
+.coverage
+htmlcov/*
+data/*
+env/*
+venv/*
+.idea/*
+__pycache__/
+**/.DS_Store
+**/__pycache__/
+__pycache__
